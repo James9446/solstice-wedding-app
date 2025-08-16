@@ -1,4 +1,3 @@
-# This file tells Gitpod how to configure your workspace.
 tasks:
   - name: Setup Environment
     init: |
