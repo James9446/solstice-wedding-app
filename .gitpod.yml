@@ -1,12 +1,10 @@
 # This file tells Gitpod how to configure your workspace.
 tasks:
   - name: Setup Environment
-    # 'init' runs once to set up Node.js version and the database.
     init: |
       nvm install 20 && nvm use 20 && nvm alias default 20
       psql -U gitpod -c "CREATE USER solstice_admin WITH PASSWORD 'password';"
       psql -U gitpod -c "CREATE DATABASE solstice_db OWNER solstice_admin;"
-    # 'command' runs every time the workspace starts.
     command: |
       nvm use 20
       pg_ctl -D /workspace/pg-data -l logfile start
