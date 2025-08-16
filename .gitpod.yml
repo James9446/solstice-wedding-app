@@ -1,18 +1,38 @@
-# This file tells Gitpod how to automatically set up your workspace.
-
 tasks:
   - name: Setup Environment
-    # 'init' runs once to set up Node.js version and the database.
     init: |
+      # 1. Setup Node.js v20
       nvm install 20 && nvm use 20 && nvm alias default 20
-      /usr/lib/postgresql/15/bin/initdb -D /workspace/pg-data
-      /usr/lib/postgresql/15/bin/pg_ctl -D /workspace/pg-data -l logfile start
-      /usr/lib/postgresql/15/bin/psql -U gitpod -c "CREATE USER solstice_admin WITH PASSWORD 'password';"
-      /usr/lib/postgresql/15/bin/psql -U gitpod -c "CREATE DATABASE solstice_db OWNER solstice_admin;"
-    # 'command' runs every time the workspace starts.
+      
+      # 2. Smartly find and setup PostgreSQL
+      echo "Searching for PostgreSQL binaries..."
+      PG_BIN_PATH=$(find /usr/lib/postgresql -name "initdb" 2>/dev/null | head -n 1)
+      
+      if [ -z "$PG_BIN_PATH" ]; then
+        echo "ERROR: Could not find PostgreSQL 'initdb' command. Halting setup."
+        exit 1
+      fi
+      
+      # Get the directory from the full path
+      PG_BIN_DIR=$(dirname "$PG_BIN_PATH")
+      echo "Found PostgreSQL executables at: $PG_BIN_DIR"
+      
+      # 3. Initialize and start the database using the found path
+      mkdir -p /workspace/pg-data
+      "$PG_BIN_DIR/initdb" -D /workspace/pg-data
+      "$PG_BIN_DIR/pg_ctl" -D /workspace/pg-data -l logfile start
+      
+      # 4. Create the user and database
+      "$PG_BIN_DIR/psql" -U gitpod -c "CREATE USER solstice_admin WITH PASSWORD 'password';"
+      "$PG_BIN_DIR/psql" -U gitpod -c "CREATE DATABASE solstice_db OWNER solstice_admin;"
+
     command: |
+      # Ensure correct environment on every start
       nvm use 20
-      /usr/lib/postgresql/15/bin/pg_ctl -D /workspace/pg-data -l logfile start
+      PG_CTL_PATH=$(find /usr/lib/postgresql -name "pg_ctl" 2>/dev/null | head -n 1)
+      if [ -n "$PG_CTL_PATH" ]; then
+        "$PG_CTL_PATH" -D /workspace/pg-data -l logfile start
+      fi
       gp sync-done pg-setup
 
 ports:
